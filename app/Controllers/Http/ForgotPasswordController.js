@@ -1,6 +1,8 @@
+/* eslint-disable no-unreachable */
 'use strict'
 const crypto = require('crypto')
 const User = use('App/Models/User')
+const Mail = use('Mail')
 class ForgotPasswordController {
   async store ({ request, response }) {
     try {
@@ -10,9 +12,19 @@ class ForgotPasswordController {
       user.token_created_at = new Date()
 
       await user.save()
+      await Mail.send(
+        ['forgotpass'],
+        { email: user.email, token: user.token, link: `${request.input('redirect_url')}?${user.token}` },
+        message => {
+          message
+            .from('hell@laHell.com')
+            .to(user.email)
+            .subject('Reset Password!')
+        }
+      )
       return user
     } catch (err) {
-      return response
+      console.log(err)
         .status(err.status)
         .send({ error: { message: 'Something went Wrong' } })
     }
